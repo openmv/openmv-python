@@ -1,0 +1,56 @@
+name: '📦 Python Package'
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+    branches:    
+      - "!*"
+    paths:
+      - '*.py'
+      - '.github/workflows/*.yml'
+      - '.github/workflows/*.json'
+      - '!**/README.md'
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    steps:
+    - name: '⏳ Checkout repository'
+      uses: actions/checkout@v3
+      
+    - name: '🐍 Set up Python 3'
+      uses: actions/setup-python@v6
+      with:
+        cache: 'pip'
+        python-version: "3.12"
+
+    - name: '🛠 Install dependencies'
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install build
+
+    - name: '📦 Build package'
+      run: python3 -m build
+
+    - name: "✏️ Generate changelog"
+      id: changelog
+      uses: mikepenz/release-changelog-builder-action@v3
+      with:
+        configuration: '.github/workflows/changelog.json'
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: '🔥 Create release'
+      uses: softprops/action-gh-release@6da8fa9354ddfdc4aeace5fc48d7f679b5214090
+      with:
+        draft: false
+        files: dist/*
+        body: ${{steps.changelog.outputs.changelog}}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

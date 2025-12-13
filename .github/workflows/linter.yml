@@ -1,0 +1,41 @@
+name: '🔎 Python Linter'
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+    branches:    
+      - 'master'
+    paths:
+      - '*.py'
+
+jobs:
+  formatting-check:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12"]
+
+    steps:
+    - name: '⏳ Checkout repository'
+      uses: actions/checkout@v6
+
+    - name: '🐍 Set up Python ${{ matrix.python-version }}'
+      uses: actions/setup-python@v6
+      with:
+        cache: 'pip'
+        python-version: ${{ matrix.python-version }}
+
+    - name: '🛠 Install dependencies'
+      run: |
+        pip install -r .github/workflows/requirements.txt
+        flake8 --version
+        pytest --version
+
+    - name: '😾 Lint with flake8'
+      run: |
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        flake8 . --count --ignore=C901 --max-complexity=15 --max-line-length=120 --statistics
