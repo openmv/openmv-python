@@ -110,29 +110,63 @@ with Camera('/dev/ttyACM0') as camera:
 
 ## API Reference
 
-See [docs/api.md](docs/api.md) for full API documentation.
+Full API documentation: [docs/api.md](docs/api.md)
 
-### Quick Reference
+### Camera
 
 ```python
-from openmv import Camera, OMVException, TimeoutException
+from openmv import Camera
 
-with Camera('/dev/ttyACM0') as camera:
-    camera.stop()                          # Stop running script
-    camera.exec(script)                    # Execute script
-    camera.streaming(True)                 # Enable streaming
-    frame = camera.read_frame()            # Read video frame
-    text = camera.read_stdout()            # Read script output
-    status = camera.read_status()          # Poll channel status
-    info = camera.system_info()            # Get system info
+Camera(
+    port,               # Serial port (e.g., '/dev/ttyACM0')
+    baudrate=921600,    # Serial baudrate
+    crc=True,           # Enable CRC validation
+    seq=True,           # Enable sequence number validation
+    ack=True,           # Enable packet acknowledgment
+    events=True,        # Enable event notifications
+    timeout=1.0,        # Protocol timeout in seconds
+    max_retry=3,        # Maximum retries
+    max_payload=4096,   # Maximum payload size
+    drop_rate=0.0,      # Packet drop simulation (testing only)
+)
 ```
+
+### Methods
+
+| Method | Description |
+|--------|-------------|
+| `connect()` / `disconnect()` | Manage connection |
+| `is_connected()` | Check connection status |
+| `exec(script)` | Execute a MicroPython script |
+| `stop()` | Stop the running script |
+| `streaming(enable, raw=False, res=None)` | Enable/disable video streaming |
+| `read_frame()` | Read video frame → `{width, height, format, depth, data, raw_size}` |
+| `read_stdout()` | Read script output text |
+| `read_status()` | Poll channel status → `{channel_name: bool, ...}` |
+| `has_channel(name)` | Check if channel exists |
+| `channel_read(name, size=None)` | Read from custom channel |
+| `channel_write(name, data)` | Write to custom channel |
+| `channel_size(name)` | Get available data size |
+| `system_info()` | Get camera system information |
+| `host_stats()` / `device_stats()` | Get protocol statistics |
+
+#### Profiler Methods (if available)
+
+| Method | Description |
+|--------|-------------|
+| `read_profile()` | Read profiler data |
+| `profiler_mode(exclusive)` | Set inclusive/exclusive mode |
+| `profiler_reset(config=None)` | Reset profiler counters |
+| `profiler_event(counter_num, event_id)` | Configure event counter |
 
 ### Exceptions
 
-- `OMVException` - Base protocol exception
-- `TimeoutException` - Timeout during communication
-- `ChecksumException` - CRC validation failure
-- `SequenceException` - Sequence number mismatch
+| Exception | Description |
+|-----------|-------------|
+| `OMVException` | Base protocol exception |
+| `TimeoutException` | Timeout during communication |
+| `ChecksumException` | CRC validation failure |
+| `SequenceException` | Sequence number mismatch |
 
 ## Requirements
 
