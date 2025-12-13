@@ -110,7 +110,7 @@ with Camera('/dev/ttyACM0') as camera:
 
 ## API Reference
 
-Full API documentation: [docs/api.md](docs/api.md)
+Full API documentation: [docs/api.md](https://github.com/openmv/openmv-python/blob/master/docs/api.md)
 
 ### Camera
 
