@@ -10,34 +10,66 @@ pip install openmv
 
 ## CLI Usage
 
-### Stream Video
+### Examples
 
 ```bash
-# Stream from specific port
+# Basic usage - stream video from camera
 openmv --port /dev/ttyACM0
 
 # Run a custom script
-openmv --script my_script.py
+openmv --port /dev/ttyACM0 --script my_script.py
 
-# Adjust display scale
-openmv --scale 2
+# Adjust display scale (default is 4x)
+openmv --port /dev/ttyACM0 --scale 2
 
-# Enable firmware symbols
-openmv --firmware path/to/firmware.elf
+# Run throughput benchmark
+openmv --port /dev/ttyACM0 --bench
+
+# Load firmware symbols for profiler function names
+openmv --port /dev/ttyACM0 --firmware build/firmware.elf
+
+# Quiet mode (suppress script output)
+openmv --port /dev/ttyACM0 --quiet
+
+# Debug mode (verbose logging)
+openmv --port /dev/ttyACM0 --debug
 ```
 
-### Benchmark Mode
+### Options
 
-```bash
-openmv --bench
-```
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--port PORT` | `/dev/ttyACM0` | Serial port |
+| `--script FILE` | None | MicroPython script file to execute |
+| `--scale N` | 4 | Display scaling factor |
+| `--poll MS` | 4 | Poll rate in milliseconds |
+| `--bench` | False | Run throughput benchmark mode |
+| `--timeout SEC` | 1.0 | Protocol timeout in seconds |
+| `--baudrate N` | 921600 | Serial baudrate |
+| `--firmware FILE` | None | Firmware ELF file for profiler symbol resolution |
+| `--quiet` | False | Suppress script output text |
+| `--debug` | False | Enable debug logging |
 
-### Controls (Stream Mode)
+#### Protocol Options
 
-- `ESC` - Exit
-- `P` - Cycle profiler overlay (Off → Performance → Events)
-- `M` - Toggle profiler mode (Inclusive ↔ Exclusive)
-- `R` - Reset profiler counters
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--crc BOOL` | true | Enable CRC validation |
+| `--seq BOOL` | true | Enable sequence number validation |
+| `--ack BOOL` | true | Enable packet acknowledgment |
+| `--events BOOL` | true | Enable event notifications |
+| `--max-retry N` | 3 | Maximum number of retries |
+| `--max-payload N` | 4096 | Maximum payload size in bytes |
+| `--drop-rate N` | 0.0 | Packet drop simulation rate (0.0-1.0, for testing) |
+
+### Keyboard Controls
+
+| Key | Action |
+|-----|--------|
+| `ESC` | Exit |
+| `P` | Cycle profiler overlay (Off → Performance → Events) |
+| `M` | Toggle profiler mode (Inclusive ↔ Exclusive) |
+| `R` | Reset profiler counters |
 
 ## Library Usage
 
@@ -78,58 +110,22 @@ with Camera('/dev/ttyACM0') as camera:
 
 ## API Reference
 
-### Camera
+See [docs/api.md](docs/api.md) for full API documentation.
 
-Main class for camera communication.
+### Quick Reference
 
 ```python
-Camera(
-    port,               # Serial port (e.g., '/dev/ttyACM0')
-    baudrate=921600,    # Serial baudrate
-    crc=True,           # Enable CRC validation
-    seq=True,           # Enable sequence number validation
-    ack=True,           # Enable packet acknowledgment
-    events=True,        # Enable event notifications
-    timeout=1.0,        # Protocol timeout in seconds
-    max_retry=3,        # Maximum retries
-    max_payload=4096,   # Maximum payload size
-    drop_rate=0.0,      # Packet drop simulation (testing only)
-)
+from openmv import Camera, OMVException, TimeoutException
+
+with Camera('/dev/ttyACM0') as camera:
+    camera.stop()                          # Stop running script
+    camera.exec(script)                    # Execute script
+    camera.streaming(True)                 # Enable streaming
+    frame = camera.read_frame()            # Read video frame
+    text = camera.read_stdout()            # Read script output
+    status = camera.read_status()          # Poll channel status
+    info = camera.system_info()            # Get system info
 ```
-
-#### Methods
-
-**Connection Management:**
-- `connect()` / `disconnect()` - Manage connection
-- `is_connected()` - Check connection status
-
-**Script Execution:**
-- `exec(script)` - Execute a MicroPython script
-- `stop()` - Stop the running script
-
-**Video Streaming:**
-- `streaming(enable, raw=False, res=None)` - Enable/disable video streaming
-- `read_frame()` - Read a video frame (returns dict with width, height, format, depth, data, raw_size)
-
-**Output and Status:**
-- `read_stdout()` - Read script output text
-- `read_status()` - Poll channel status (returns dict of channel readiness)
-
-**Channel Operations:**
-- `has_channel(name)` - Check if a channel exists
-- `channel_read(name, size=None)` - Read data from a custom channel
-- `channel_write(name, data)` - Write data to a custom channel
-- `channel_size(name)` - Get size of available data in a channel
-
-**Profiler (if available):**
-- `read_profile()` - Read profiler data
-- `profiler_mode(exclusive)` - Set profiler mode (inclusive/exclusive)
-- `profiler_reset(config=None)` - Reset profiler counters
-- `profiler_event(counter_num, event_id)` - Configure event counter
-
-**System Information:**
-- `system_info()` - Get camera system information
-- `host_stats()` / `device_stats()` - Get protocol statistics
 
 ### Exceptions
 
