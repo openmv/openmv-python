@@ -35,7 +35,25 @@ while(True):
 
 # Default test script for csi-based cameras
 test_script = """
-import csi, image, time
+import time
+import protocol
+import csi
+import image
+
+class TicksChannel:
+    def __init__(self):
+        pass
+
+    def size(self):
+        return 10
+
+    def read(self, offset, size):
+        return f'{time.ticks_ms():010d}'
+
+    def poll(self):
+        return True
+
+ch1 = protocol.register(name='ticks', backend=TicksChannel())
 
 csi0 = csi.CSI()
 csi0.reset()
@@ -145,6 +163,10 @@ def main():
                         action='store_true',
                         help='Suppress script output text')
 
+    parser.add_argument('--channel',
+                        action='store', default=None,
+                        help='Custom channel to poll and read')
+
     args = parser.parse_args()
 
     # Register signal handlers for clean exit
@@ -248,6 +270,13 @@ def main():
                 if not args.quiet and not args.bench and status and status.get('stdout'):
                     if text := camera.read_stdout():
                         print(text, end='')
+
+                # Read custom channel
+                if args.channel and status and status.get(args.channel):
+                    if size := camera.channel_size(args.channel):
+                        data = camera.channel_read(args.channel, size=size)
+                        preview = data[:10] if len(data) > 10 else data
+                        logging.info(f"[{args.channel}] ({size} bytes) {preview}")
 
                 # Read frame data
                 if frame := camera.read_frame():

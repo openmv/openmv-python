@@ -33,6 +33,9 @@ openmv --port /dev/ttyACM0 --quiet
 
 # Debug mode (verbose logging)
 openmv --port /dev/ttyACM0 --debug
+
+# Preview a custom data channel
+openmv --port /dev/ttyACM0 --channel ticks
 ```
 
 ### Options
@@ -47,6 +50,7 @@ openmv --port /dev/ttyACM0 --debug
 | `--timeout SEC` | 1.0 | Protocol timeout in seconds |
 | `--baudrate N` | 921600 | Serial baudrate |
 | `--firmware FILE` | None | Firmware ELF file for profiler symbol resolution |
+| `--channel NAME` | None | Custom data channel to poll and print |
 | `--quiet` | False | Suppress script output text |
 | `--debug` | False | Enable debug logging |
 
@@ -106,6 +110,46 @@ with Camera('/dev/ttyACM0') as camera:
 
         if text := camera.read_stdout():
             print(text, end='')
+```
+
+### Custom Channels
+
+Custom channels allow bidirectional data exchange between the camera and host.
+
+**Camera-side script (MicroPython):**
+
+```python
+import time
+import protocol
+
+class TicksChannel:
+    def size(self):
+        return 10
+
+    def read(self, offset, size):
+        return f'{time.ticks_ms():010d}'
+
+    def poll(self):
+        return True
+
+protocol.register(name='ticks', backend=TicksChannel())
+```
+
+**Host-side (Python):**
+
+```python
+from openmv import Camera
+
+with Camera('/dev/ttyACM0') as camera:
+    camera.exec(script)
+
+    while True:
+        # Check if channel has data
+        if camera.has_channel('ticks'):
+            size = camera.channel_size('ticks')
+            if size > 0:
+                data = camera.channel_read('ticks', size)
+                print(f"Ticks: {data.decode()}")
 ```
 
 ## API Reference
