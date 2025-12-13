@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = ["setuptools>=61.0", "setuptools-scm>=8.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "openmv"
-version = "2.0.0"
+dynamic = ["version"]
 description = "OpenMV Camera Protocol V2 - Python library and CLI"
 readme = "README.md"
 license = {text = "MIT"}
@@ -46,3 +46,6 @@ Issues = "https://github.com/openmv/openmv-python/issues"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools_scm]
+version_scheme = "no-guess-dev"
