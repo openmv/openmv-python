@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "openmv"
+version = "2.0.0"
+description = "OpenMV Camera Protocol V2 - Python library and CLI"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.8"
+authors = [
+    {name = "OpenMV, LLC", email = "info@openmv.io"}
+]
+keywords = ["openmv", "camera", "machine-vision", "embedded", "micropython"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Image Processing",
+    "Topic :: Software Development :: Embedded Systems",
+]
+dependencies = [
+    "pyserial>=3.5",
+    "numpy>=1.20.0",
+    "pygame>=2.0.0",
+    "pyelftools"
+]
+
+[project.scripts]
+openmv = "openmv.cli:main"
+
+[project.urls]
+Homepage = "https://openmv.io"
+Documentation = "https://docs.openmv.io"
+Repository = "https://github.com/openmv/openmv-python"
+Issues = "https://github.com/openmv/openmv-python/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
