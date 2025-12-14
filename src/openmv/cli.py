@@ -249,19 +249,20 @@ def main():
                 for event in pygame.event.get():
                     if event.type == pygame.QUIT:
                         raise KeyboardInterrupt
-                    elif event.type == pygame.KEYDOWN:
-                        if event.key == pygame.K_ESCAPE:
-                            raise KeyboardInterrupt
-                        elif profile_enabled and event.key == pygame.K_p:
-                            profile_view = (profile_view + 1) % 3  # Cycle views
-                            logging.info(f"Profile view: {profile_view}")
-                        elif profile_enabled and event.key == pygame.K_m:
-                            profile_mode = not profile_mode
-                            camera.profiler_mode(exclusive=profile_mode)
-                            logging.info(f"Profile mode: {'Exclusive' if profile_mode else 'Inclusive'}")
-                        elif profile_enabled and event.key == pygame.K_r:
-                            camera.profiler_reset()
-                            logging.info("Profiler reset")
+                    if event.type != pygame.KEYDOWN:
+                        continue
+                    if event.key == pygame.K_ESCAPE:
+                        raise KeyboardInterrupt
+                    elif event.key == pygame.K_p and profile_enabled:
+                        profile_view = (profile_view + 1) % 3  # Cycle views
+                        logging.info(f"Profile view: {profile_view}")
+                    elif event.key == pygame.K_r and profile_enabled:
+                        camera.profiler_reset()
+                        logging.info("Profiler reset")
+                    elif event.key == pygame.K_m and profile_enabled:
+                        profile_mode = not profile_mode
+                        camera.profiler_mode(exclusive=profile_mode)
+                        logging.info(f"Profile mode: {'Exclusive' if profile_mode else 'Inclusive'}")
 
                 # Read camera status
                 status = camera.read_status()
@@ -277,6 +278,13 @@ def main():
                         data = camera.channel_read(args.channel, size=size)
                         preview = data[:10] if len(data) > 10 else data
                         logging.info(f"[{args.channel}] ({size} bytes) {preview}")
+
+                # Read profiler data if enabled (max 10Hz)
+                if profile_enabled and profile_view and screen is not None:
+                    current_time = time.time()
+                    if current_time - profile_update_ms >= 0.1:  # 10Hz
+                        if profile_data := camera.read_profile():
+                            profile_update_ms = current_time
 
                 # Read frame data
                 if frame := camera.read_frame():
@@ -304,27 +312,17 @@ def main():
                         rate_text = f"{current_mbps * 1024:.2f} KB/s"
                     else:
                         rate_text = f"{current_mbps:.2f} MB/s"
+
                     fps_text = f"{fps:.2f} FPS {rate_text} {w}x{h} RGB888"
                     screen.blit(font.render(fps_text, True, (255, 0, 0)), (0, 0))
 
-                    fps_clock.tick()
-
-                # Read profiler data if enabled (max 10Hz)
-                if profile_enabled and profile_view and screen is not None:
-                    current_time = time.time()
-                    if current_time - profile_update_ms >= 0.1:  # 10Hz
-                        if profile_data := camera.read_profile():
-                            profile_update_ms = current_time
-
                     # Draw profiler overlay if enabled and data available
                     if profile_data is not None:
-                        screen_width, screen_height = screen.get_size()
-                        draw_profile_overlay(screen, screen_width, screen_height,
-                                             profile_data, profile_mode, profile_view, 1, symbols)
+                        draw_profile_overlay(screen, profile_data, profile_mode,
+                                             profile_view, 1, symbols, alpha=200)
 
-                # Update display once at the end
-                if frame:
                     pygame.display.flip()
+                    fps_clock.tick()
 
                 # Control main loop timing
                 clock.tick(1000 // args.poll)
