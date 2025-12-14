@@ -386,6 +386,34 @@ camera.profiler_event(0, 0x0039)  # CPU cycles
 
 ## System Information
 
+### version()
+
+Get firmware, protocol, and bootloader version information.
+
+```python
+ver = camera.version()
+```
+
+**Returns:** `dict` - Version information dictionary.
+
+#### Return Value
+
+| Key | Type | Description |
+|-----|------|-------------|
+| `protocol_version` | tuple | Protocol version (major, minor, patch) |
+| `bootloader_version` | tuple | Bootloader version (major, minor, patch) |
+| `firmware_version` | tuple | Firmware version (major, minor, patch) |
+
+#### Example
+
+```python
+ver = camera.version()
+fw = ver['firmware_version']
+print(f"Firmware: {fw[0]}.{fw[1]}.{fw[2]}")
+```
+
+---
+
 ### system_info()
 
 Get camera system information.
@@ -402,9 +430,9 @@ info = camera.system_info()
 |-----|------|-------------|
 | `cpu_id` | int | CPU identifier |
 | `device_id` | tuple | Device ID (3 words) |
-| `sensor_chip_id` | tuple | Sensor chip IDs (3 words) |
 | `usb_vid` | int | USB Vendor ID |
 | `usb_pid` | int | USB Product ID |
+| `chip_id` | tuple | A list of detected sensors (3 words) |
 | `gpu_present` | bool | GPU available |
 | `npu_present` | bool | NPU available |
 | `isp_present` | bool | ISP available |
@@ -424,9 +452,6 @@ info = camera.system_info()
 | `ram_size_kb` | int | RAM size in KB |
 | `framebuffer_size_kb` | int | Framebuffer size in KB |
 | `stream_buffer_size_kb` | int | Stream buffer size in KB |
-| `firmware_version` | bytes | Firmware version (3 bytes) |
-| `protocol_version` | bytes | Protocol version (3 bytes) |
-| `bootloader_version` | bytes | Bootloader version (3 bytes) |
 
 ---
 
