@@ -371,14 +371,11 @@ def draw_profile_table(overlay_surface, config, profile_data, profile_mode, symb
     overlay_surface.blit(instruction_text, (0, summary_y + int(20 * config['scale_factor'])))
 
 
-def draw_profile_overlay(screen, screen_width, screen_height, profile_data,
-                         profile_mode, profile_view, scale, symbols, alpha=250):
+def draw_profile_overlay(screen, profile_data, profile_mode, profile_view, scale, symbols, alpha=250):
     """Main entry point for drawing the profile overlay.
 
     Args:
         screen: pygame surface to draw on
-        screen_width: Screen width in pixels
-        screen_height: Screen height in pixels
         profile_data: List of profile records from camera
         profile_mode: Boolean, True=exclusive, False=inclusive
         profile_view: 1=performance, 2=events
@@ -388,8 +385,8 @@ def draw_profile_overlay(screen, screen_width, screen_height, profile_data,
     """
     # Calculate dimensions and create surface
     base_width, base_height = 800, 800
-    screen_width *= scale
-    screen_height *= scale
+    screen_width = screen.get_size()[0] * scale
+    screen_height = screen.get_size()[1] * scale
     scale_factor = min(screen_width / base_width, screen_height / base_height)
 
     overlay_surface = pygame.Surface((screen_width, screen_height), pygame.SRCALPHA)
