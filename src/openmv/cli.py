@@ -115,6 +115,11 @@ def main():
     parser.add_argument('--bench',
                         action='store_true', default=False,
                         help='Run throughput benchmark')
+
+    parser.add_argument('--raw',
+                        action='store_true', default=False,
+                        help='Enable raw streaming mode')
+
     parser.add_argument('--timeout',
                         action='store', type=float, default=1.0,
                         help='Protocol timeout in seconds')
@@ -241,7 +246,7 @@ def main():
 
             # Execute script
             camera.exec(script)
-            camera.streaming(True, raw=False, resolution=(512, 512))
+            camera.streaming(True, raw=args.raw, resolution=(512, 512))
             logging.info("Script executed, starting display...")
 
             while True:
