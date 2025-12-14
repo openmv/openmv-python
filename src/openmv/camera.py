@@ -345,11 +345,11 @@ class Camera:
         self._channel_ioctl(stdin_id, ChannelIOCTL.STDIN_EXEC)
 
     @retry_if_failed
-    def streaming(self, enable, raw=False, res=None):
+    def streaming(self, enable, raw=False, resolution=None):
         """Enable or disable streaming"""
         stream_id = self.get_channel(name="stream")
         if raw:
-            self._channel_ioctl(stream_id, ChannelIOCTL.STREAM_RAW_CFG, 'II', *res)
+            self._channel_ioctl(stream_id, ChannelIOCTL.STREAM_RAW_CFG, 'II', *resolution)
         self._channel_ioctl(stream_id, ChannelIOCTL.STREAM_RAW_CTRL, 'I', raw)
         self._channel_ioctl(stream_id, ChannelIOCTL.STREAM_CTRL, 'I', enable)
 

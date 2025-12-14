@@ -132,12 +132,12 @@ camera.stop()
 
 ## Video Streaming
 
-### streaming(enable, raw=False, res=None)
+### streaming(enable, raw=False, resolution=None)
 
 Enable or disable video streaming.
 
 ```python
-camera.streaming(True, raw=False, res=(512, 512))
+camera.streaming(True, raw=False, resolution=(512, 512))
 ```
 
 #### Parameters
@@ -146,7 +146,7 @@ camera.streaming(True, raw=False, res=(512, 512))
 |-----------|------|---------|-------------|
 | `enable` | bool | required | Enable or disable streaming |
 | `raw` | bool | False | Enable raw streaming mode |
-| `res` | tuple | None | Resolution tuple (width, height) for raw mode |
+| `resolution` | tuple | None | Resolution tuple (width, height) for raw mode |
 
 ---
 

@@ -1,6 +1,6 @@
 # OpenMV Python
 
-Python library and CLI for communicating with OpenMV cameras using Protocol V2.
+Python library and CLI for communicating with OpenMV cameras.
 
 ## Installation
 
@@ -20,7 +20,7 @@ openmv --port /dev/ttyACM0
 openmv --port /dev/ttyACM0 --script my_script.py
 
 # Adjust display scale (default is 4x)
-openmv --port /dev/ttyACM0 --scale 2
+openmv --port /dev/ttyACM0 --scale 5
 
 # Run throughput benchmark
 openmv --port /dev/ttyACM0 --bench
@@ -47,6 +47,7 @@ openmv --port /dev/ttyACM0 --channel ticks
 | `--scale N` | 4 | Display scaling factor |
 | `--poll MS` | 4 | Poll rate in milliseconds |
 | `--bench` | False | Run throughput benchmark mode |
+| `--raw` | False | Enable raw streaming mode |
 | `--timeout SEC` | 1.0 | Protocol timeout in seconds |
 | `--baudrate N` | 921600 | Serial baudrate |
 | `--firmware FILE` | None | Firmware ELF file for profiler symbol resolution |
@@ -101,7 +102,7 @@ with Camera('/dev/ttyACM0') as camera:
 
     # Execute script and enable streaming
     camera.exec(script)
-    camera.streaming(True, raw=False, res=(512, 512))
+    camera.streaming(True)
 
     # Read frames and output
     while True:
@@ -152,9 +153,7 @@ with Camera('/dev/ttyACM0') as camera:
                 print(f"Ticks: {data.decode()}")
 ```
 
-## API Reference
-
-Full API documentation: [docs/api.md](https://github.com/openmv/openmv-python/blob/master/docs/api.md)
+## Quick Reference
 
 ### Camera
 
@@ -183,7 +182,7 @@ Camera(
 | `is_connected()` | Check connection status |
 | `exec(script)` | Execute a MicroPython script |
 | `stop()` | Stop the running script |
-| `streaming(enable, raw=False, res=None)` | Enable/disable video streaming |
+| `streaming(enable, raw=False, resolution=None)` | Enable/disable video streaming |
 | `read_frame()` | Read video frame → `{width, height, format, depth, data, raw_size}` |
 | `read_stdout()` | Read script output text |
 | `read_status()` | Poll channel status → `{channel_name: bool, ...}` |
@@ -211,6 +210,10 @@ Camera(
 | `TimeoutException` | Timeout during communication |
 | `ChecksumException` | CRC validation failure |
 | `SequenceException` | Sequence number mismatch |
+
+## API documentation
+
+Full API documentation: [docs/api.md](https://github.com/openmv/openmv-python/blob/master/docs/api.md)
 
 ## Requirements
 

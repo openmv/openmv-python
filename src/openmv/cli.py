@@ -241,7 +241,7 @@ def main():
 
             # Execute script
             camera.exec(script)
-            camera.streaming(True, raw=False, res=(512, 512))
+            camera.streaming(True, raw=False, resolution=(512, 512))
             logging.info("Script executed, starting display...")
 
             while True:
