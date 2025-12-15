@@ -190,6 +190,7 @@ Camera(
 | `channel_read(name, size=None)` | Read from custom channel |
 | `channel_write(name, data)` | Write to custom channel |
 | `channel_size(name)` | Get available data size |
+| `version()` | Get firmware, protocol, and bootloader versions |
 | `system_info()` | Get camera system information |
 | `host_stats()` / `device_stats()` | Get protocol statistics |
 

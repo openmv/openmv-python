@@ -48,6 +48,7 @@ class Camera:
         self.channels_by_id = {}
         self.pending_channel_events = 0
         self.sysinfo = {}
+        self.verinfo = {}
         self.transport = None
         self.frame_event = False
 
@@ -254,7 +255,8 @@ class Camera:
             # Cache channel list
             self.update_channels()
 
-            # Cache system info
+            # Cache system info and version info
+            self.verinfo = self.version()
             self.sysinfo = self.system_info()
 
             # Print system information
@@ -476,20 +478,20 @@ class Camera:
 
         self.frame_event = False
         try:
-            # Get total size (16-byte header + stream data)
-            if (size := self._channel_size(stream_id)) <= 16:
+            # Get total size (20-byte header + stream data)
+            if (size := self._channel_size(stream_id)) <= 20:
                 return None
 
             # Read all data (header + stream data)
             data = self._channel_read(stream_id, 0, size)
-            if len(data) < 16:
+            if len(data) < 20:
                 return None
 
-            # Parse stream header: width(4), height(4), pixformat(4), depth/size(4)
-            width, height, pixformat, depth = struct.unpack('<IIII', data[:16])
+            # Parse stream header: width(4), height(4), pixformat(4), depth(4), offset(4)
+            width, height, pixformat, depth, offset = struct.unpack('<IIIII', data[:20])
 
-            # Extract raw frame data
-            raw_data = data[16:]
+            # Extract raw frame data (skip header and any padding)
+            raw_data = data[offset:]
 
             # Convert to RGB888 using image module
             rgb_data, fmt_str = omv_image.convert_to_rgb888(raw_data, width, height, pixformat)
@@ -535,32 +537,50 @@ class Camera:
         return self.get_channel(name=channel) is not None
 
     @retry_if_failed
+    def version(self):
+        """Get version information"""
+        payload = self._send_cmd_wait_resp(Opcode.PROTO_VERSION)
+
+        if len(payload) < 16:
+            raise OMVException(f"Invalid PROTO_VERSION payload size: {len(payload)}")
+
+        # Unpack the structure (16 bytes):
+        # protocol_version[3] + bootloader_version[3] + firmware_version[3] + reserved[7]
+        data = struct.unpack('<3s3s3s7x', payload)
+
+        return {
+            'protocol_version': tuple(data[0]),
+            'bootloader_version': tuple(data[1]),
+            'firmware_version': tuple(data[2]),
+        }
+
+    @retry_if_failed
     def system_info(self):
         """Get system information"""
         payload = self._send_cmd_wait_resp(Opcode.SYS_INFO)
 
-        if len(payload) < 80:
+        if len(payload) < 76:
             raise OMVException(f"Invalid SYS_INFO payload size: {len(payload)}")
 
-        # Unpack the structure:
-        # cpu_id[1] + dev_id[3] + chip_id[3] + usb_id[1] + rsvd[1] +
-        # hw_caps[2] + memory[6] + versions[9] + padding[3]
-        data = struct.unpack('<I 3I 3I I I 2I 6I 3s3s3s 3x', payload)
+        # Unpack the structure (76 bytes):
+        # cpu_id[1] + dev_id[3] + usb_id[1] + chip_id[3] + id_reserved[2] +
+        # hw_caps[2] + memory[4] + memory_reserved[3]
+        data = struct.unpack('<I 3I I 3I 2I 2I 4I 3I', payload)
 
         # Extract USB VID/PID
-        usb_id = data[7]
+        usb_id = data[4]
         usb_vid = (usb_id >> 16) & 0xFFFF
         usb_pid = usb_id & 0xFFFF
 
         # Extract capability bitfield (always 2 words)
-        capabilities = data[9]  # First hw_caps word
+        capabilities = data[10]  # First hw_caps word
 
         return {
             'cpu_id': data[0],
             'device_id': data[1:4],  # 3 words
-            'sensor_chip_id': data[4:7],  # 3 words
             'usb_vid': usb_vid,
             'usb_pid': usb_pid,
+            'chip_id': data[5:8],  # 3 words
             'gpu_present': bool(capabilities & (1 << 0)),
             'npu_present': bool(capabilities & (1 << 1)),
             'isp_present': bool(capabilities & (1 << 2)),
@@ -576,13 +596,10 @@ class Camera:
             'eth_present': bool(capabilities & (1 << 19)),
             'usb_highspeed': bool(capabilities & (1 << 20)),
             'multicore_present': bool(capabilities & (1 << 21)),
-            'flash_size_kb': data[11],
-            'ram_size_kb': data[12],
-            'framebuffer_size_kb': data[13],
-            'stream_buffer_size_kb': data[14],
-            'firmware_version': data[17],
-            'protocol_version': data[18],
-            'bootloader_version': data[19]
+            'flash_size_kb': data[12],
+            'ram_size_kb': data[13],
+            'framebuffer_size_kb': data[14],
+            'stream_buffer_size_kb': data[15],
         }
 
     def print_system_info(self):
@@ -596,8 +613,8 @@ class Camera:
         dev_id_hex = ''.join(f"{word:08X}" for word in self.sysinfo['device_id'])
         logging.info(f"Device ID: {dev_id_hex}")
 
-        # Sensor Chip IDs are now an array of 3 words
-        for i, chip_id in enumerate(self.sysinfo['sensor_chip_id']):
+        # Chip IDs are an array of 3 words
+        for i, chip_id in enumerate(self.sysinfo['chip_id']):
             if chip_id != 0:  # Only show non-zero chip IDs
                 logging.info(f"CSI{i}: 0x{chip_id:08X}")
 
@@ -637,12 +654,12 @@ class Camera:
         logging.info(f"Profiler: {'Available' if profile_available else 'Not available'}")
 
         # Version info
-        fw = self.sysinfo['firmware_version']
-        proto = self.sysinfo['protocol_version']
-        boot = self.sysinfo['bootloader_version']
-        logging.info(f"Firmware version: {fw[0]}.{fw[1]}.{fw[2]}")
-        logging.info(f"Protocol version: {proto[0]}.{proto[1]}.{proto[2]}")
-        logging.info(f"Bootloader version: {boot[0]}.{boot[1]}.{boot[2]}")
+        protocol = self.verinfo['protocol_version']
+        bootloader = self.verinfo['bootloader_version']
+        firmware = self.verinfo['firmware_version']
+        logging.info(f"Protocol version: {protocol[0]}.{protocol[1]}.{protocol[2]}")
+        logging.info(f"Bootloader version: {bootloader[0]}.{bootloader[1]}.{bootloader[2]}")
+        logging.info(f"Firmware version: {firmware[0]}.{firmware[1]}.{firmware[2]}")
         logging.info(f"Protocol capabilities: CRC={self.caps['crc']}, SEQ={self.caps['seq']}, "
                      f"ACK={self.caps['ack']}, EVENTS={self.caps['events']}, "
                      f"PAYLOAD={self.caps['max_payload']}")
