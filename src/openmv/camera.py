@@ -103,7 +103,7 @@ class Camera:
         """Handle events from the device"""
         if channel_id == 0:
             # System events
-            event_name = EventType(event).name if event in EventType else f"0x{event:04X}"
+            event_name = EventType(event).name if event in EventType._value2member_map_ else f"0x{event:04X}"
             logging.info(f"🔔 System Event: channel=system, event={event_name}")
 
             # Handle system events
