@@ -79,9 +79,12 @@ class Transport:
 
     def _check_seq(self, sequence, expected_sequence, opcode, flags):
         """Check if sequence is valid or sequence checking is disabled"""
+        # ACK/NAK packets are accepted with any sequence number: after the
+        # device resets its protocol state (e.g. a soft reboot) its sequence
+        # restarts at 0, and the NAK it sends for our out-of-sequence command
+        # is the only way to learn that a resync is needed.
         return (not self.seq_enabled or
-                (flags & Flags.EVENT) or
-                (flags & Flags.RTX) or
+                (flags & (Flags.EVENT | Flags.RTX | Flags.ACK | Flags.NAK)) or
                 sequence == expected_sequence or
                 opcode == Opcode.PROTO_SYNC)
 
@@ -211,11 +214,13 @@ class Transport:
                 else:
                     self.send_packet(packet['opcode'], packet['channel'], Flags.ACK)
 
-            # Handle event packets
+            # Handle event packets. Events do not extend the receive timeout:
+            # a device that keeps emitting events (e.g. stdout notifications
+            # every 50 ms while its output is unread) must not keep a command
+            # waiting for its response forever.
             if packet['flags'] & Flags.EVENT:
                 self.event_callback(packet['channel'], 0xFFFF if not packet['length']
                                     else struct.unpack('<H', packet['payload'])[0])
-                start_time = time.time()
                 continue
 
             # Update sequence after each packet (including fragments)

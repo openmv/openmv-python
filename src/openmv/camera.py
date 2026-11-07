@@ -51,6 +51,7 @@ class Camera:
         self.verinfo = {}
         self.transport = None
         self.frame_event = False
+        self.resync_pending = False
 
     def __enter__(self):
         """Context manager entry"""
@@ -82,6 +83,14 @@ class Camera:
         if not self.is_connected():
             raise OMVException("Not connected")
 
+        # The device announced a soft reboot: its protocol state (sequence,
+        # capabilities, dynamic channels) is reset once it is back. Start the
+        # next command with a resync so both sides agree again.
+        if self.resync_pending:
+            # Clear first: _resync() negotiates capabilities through this function.
+            self.resync_pending = False
+            self._resync()
+
         # Special handling for reset commands - they never return
         if opcode in [Opcode.SYS_RESET, Opcode.SYS_BOOT]:
             self.transport.send_packet(opcode, channel, 0, data)
@@ -109,6 +118,11 @@ class Camera:
             # Handle system events
             if event == EventType.SOFT_REBOOT:
                 logging.info("🔥 Soft Reboot triggered")
+                self.resync_pending = True
+                # In-flight packets from the rebooting device restart at 0.
+                self.transport.reset_sequence()
+                # The reboot drops every dynamic channel: refresh the list.
+                self.pending_channel_events += 1
             elif event == EventType.CHANNEL_REGISTERED:
                 self.pending_channel_events += 1
         elif channel_id in self.channels_by_id:
@@ -334,6 +348,10 @@ class Camera:
         # Stop running script
         stdin_id = self.get_channel(name="stdin")
         self._channel_ioctl(stdin_id, ChannelIOCTL.STDIN_STOP)
+        # Stopping a running script soft-reboots the device. Without events
+        # there is no SOFT_REBOOT notification, so assume a resync is needed.
+        if not self.caps['events']:
+            self.resync_pending = True
 
     @retry_if_failed
     def exec(self, script):
