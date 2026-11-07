@@ -278,12 +278,13 @@ class Transport:
                 if length > self.max_payload:
                     self.log(seq, chan, opcode, flags, length, "Rjct")
                     self.buf.consume(1)
-                elif not self._check_seq(seq, self.sequence, opcode, flags):
-                    self.log(seq, chan, opcode, flags, length, "Rjct")
-                    self.buf.consume(1)
                 elif not self._check_crc(crc, header[:Protocol.HEADER_SIZE - 2], 16):
                     self.log(seq, chan, opcode, flags, length, "Rjct")
                     self.buf.consume(1)
+                elif not self._check_seq(seq, self.sequence, opcode, flags):
+                    self.log(seq, chan, opcode, flags, length, "Rjct")
+                    self.buf.consume(1)
+                    raise SequenceException("")
                 else:
                     self.state = State.PAYLOAD
                     self.plength = Protocol.HEADER_SIZE + length
