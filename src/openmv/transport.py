@@ -215,7 +215,6 @@ class Transport:
             if packet['flags'] & Flags.EVENT:
                 self.event_callback(packet['channel'], 0xFFFF if not packet['length']
                                     else struct.unpack('<H', packet['payload'])[0])
-                start_time = time.time()
                 continue
 
             # Update sequence after each packet (including fragments)
