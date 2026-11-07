@@ -7,6 +7,7 @@
 # This module provides the high-level Camera class that handles all
 # camera operations and channel communications using the OpenMV Protocol.
 
+import time
 import struct
 import sys
 import serial
@@ -329,15 +330,24 @@ class Camera:
         self._send_cmd_wait_resp(Opcode.PROTO_SET_CAPS, 0, payload)
 
     @retry_if_failed
-    def stop(self):
-        """Stop running script"""
+    def stop(self, timeout=None):
+        """Stop running script and wait for it to exit"""
         # Stop running script
         stdin_id = self.get_channel(name="stdin")
         self._channel_ioctl(stdin_id, ChannelIOCTL.STDIN_STOP)
+        # Wait for the script to exit
+        timeout = self.timeout if timeout is None else timeout
+        start_time = time.time()
+        while self.read_status()["stdin"]:
+            if time.time() - start_time > timeout:
+                raise TimeoutException("Timeout waiting for the script to stop")
 
     @retry_if_failed
     def exec(self, script):
         """Write and execute a script"""
+        # Stop the running script first
+        if self.read_status()["stdin"]:
+            self.stop()
         stdin_id = self.get_channel(name="stdin")
         # Reset script buffer
         self._channel_ioctl(stdin_id, ChannelIOCTL.STDIN_RESET)
