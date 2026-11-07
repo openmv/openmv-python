@@ -215,7 +215,6 @@ class Transport:
             if packet['flags'] & Flags.EVENT:
                 self.event_callback(packet['channel'], 0xFFFF if not packet['length']
                                     else struct.unpack('<H', packet['payload'])[0])
-                start_time = time.time()
                 continue
 
             # Update sequence after each packet (including fragments)
@@ -279,12 +278,13 @@ class Transport:
                 if length > self.max_payload:
                     self.log(seq, chan, opcode, flags, length, "Rjct")
                     self.buf.consume(1)
-                elif not self._check_seq(seq, self.sequence, opcode, flags):
-                    self.log(seq, chan, opcode, flags, length, "Rjct")
-                    self.buf.consume(1)
                 elif not self._check_crc(crc, header[:Protocol.HEADER_SIZE - 2], 16):
                     self.log(seq, chan, opcode, flags, length, "Rjct")
                     self.buf.consume(1)
+                elif not self._check_seq(seq, self.sequence, opcode, flags):
+                    self.log(seq, chan, opcode, flags, length, "Rjct")
+                    self.buf.consume(1)
+                    raise SequenceException("")
                 else:
                     self.state = State.PAYLOAD
                     self.plength = Protocol.HEADER_SIZE + length
