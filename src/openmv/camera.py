@@ -331,23 +331,30 @@ class Camera:
 
     @retry_if_failed
     def stop(self, timeout=None):
-        """Stop running script and wait for it to exit"""
+        """Stop running script and wait for it to exit.
+
+        timeout is how long to wait for the script to exit; None waits
+        for as long as it takes.
+        """
         # Stop running script
         stdin_id = self.get_channel(name="stdin")
         self._channel_ioctl(stdin_id, ChannelIOCTL.STDIN_STOP)
         # Wait for the script to exit
-        timeout = self.timeout if timeout is None else timeout
         start_time = time.time()
         while self.read_status()["stdin"]:
-            if time.time() - start_time > timeout:
+            if timeout is not None and time.time() - start_time > timeout:
                 raise TimeoutException("Timeout waiting for the script to stop")
 
     @retry_if_failed
-    def exec(self, script):
-        """Write and execute a script"""
+    def exec(self, script, timeout=None):
+        """Write and execute a script.
+
+        A running script is stopped first; timeout is how long to wait for
+        it to exit (None waits for as long as it takes).
+        """
         # Stop the running script first
         if self.read_status()["stdin"]:
-            self.stop()
+            self.stop(timeout=timeout)
         stdin_id = self.get_channel(name="stdin")
         # Reset script buffer
         self._channel_ioctl(stdin_id, ChannelIOCTL.STDIN_RESET)
