@@ -115,7 +115,10 @@ class Transport:
             flags = packet['flags']
             length = packet['length']
 
-        opcode_str = Opcode(opcode).name if opcode in Opcode else f"0x{opcode:02X}"
+        try:
+            opcode_str = Opcode(opcode).name
+        except ValueError:
+            opcode_str = f"0x{opcode:02X}"
         flags_str = self._format_flags(flags)
 
         # Add emoji based on packet type and direction
