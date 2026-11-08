@@ -115,7 +115,10 @@ class Transport:
             flags = packet['flags']
             length = packet['length']
 
-        opcode_str = Opcode(opcode).name if opcode in Opcode else f"0x{opcode:02X}"
+        try:
+            opcode_str = Opcode(opcode).name
+        except ValueError:
+            opcode_str = f"0x{opcode:02X}"
         flags_str = self._format_flags(flags)
 
         # Add emoji based on packet type and direction
@@ -237,7 +240,11 @@ class Transport:
                 elif status == Status.TIMEOUT:
                     raise TimeoutException("")
                 elif status != Status.BUSY:
-                    raise OMVException(f"Command failed with status: {Status(status).name}")
+                    try:
+                        status_str = Status(status).name
+                    except ValueError:
+                        status_str = f"0x{status:04X}"
+                    raise OMVException(f"Command failed with status: {status_str}")
                 return False
 
             # Either last fragment or non-fragmented packet
