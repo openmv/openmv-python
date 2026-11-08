@@ -240,7 +240,11 @@ class Transport:
                 elif status == Status.TIMEOUT:
                     raise TimeoutException("")
                 elif status != Status.BUSY:
-                    raise OMVException(f"Command failed with status: {Status(status).name}")
+                    try:
+                        status_str = Status(status).name
+                    except ValueError:
+                        status_str = f"0x{status:04X}"
+                    raise OMVException(f"Command failed with status: {status_str}")
                 return False
 
             # Either last fragment or non-fragmented packet
